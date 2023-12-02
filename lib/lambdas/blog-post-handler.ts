@@ -1,12 +1,17 @@
-import {APIGatewayEvent} from "aws-lambda";
+import {APIGatewayEvent, APIGatewayProxyResult} from "aws-lambda";
 import {v4 as uuid} from "uuid";
 import {BlogPost} from "./BlogPost";
 import {BlogPostService} from "./BlogPostService";
 import {APIGatewayClient, GetExportCommand} from "@aws-sdk/client-api-gateway";
 
+
+const defaultHeaders = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*"
+}
 const TABLE_NAME = process.env.TABLE_NAME!;
 const blogPostService = new BlogPostService(TABLE_NAME);
-export const createBlogPostHandler = async (event: APIGatewayEvent) => {
+export const createBlogPostHandler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
     const blogPostData = JSON.parse(event.body!) as {
         title: string;
         author: string;
@@ -28,17 +33,19 @@ export const createBlogPostHandler = async (event: APIGatewayEvent) => {
     return {
         statusCode: 201,
         body: JSON.stringify(blogPost),
+        headers: defaultHeaders
     }
 }
 
 
-export const getBlogPostsHandler = async (event: APIGatewayEvent) => {
+export const getBlogPostsHandler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
     const order = event?.queryStringParameters?.order!;
     let blogPosts: BlogPost[] = await blogPostService.getAllBlogPosts();
     const sortedBlogPosts = sortBlogPosts(order, blogPosts)
     return {
         statusCode: 200,
-        body: JSON.stringify(sortedBlogPosts)
+        body: JSON.stringify(sortedBlogPosts),
+        headers: defaultHeaders
     }
 }
 
@@ -60,25 +67,27 @@ function sortDescending(blogA: BlogPost, blogB: BlogPost) {
 }
 
 
-export const getBlogPostHandler = async (event: APIGatewayEvent) => {
+export const getBlogPostHandler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
     const id = event.pathParameters!.id!;
     const blogPost = await blogPostService.getBlogPostById(id);
     return {
         statusCode: 200,
-        body: JSON.stringify(blogPost)
+        body: JSON.stringify(blogPost),
+        headers: defaultHeaders
     }
 }
 
-export const deleteBlogPostHandler = async (event: APIGatewayEvent) => {
+export const deleteBlogPostHandler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
     const id = event.pathParameters!.id!;
     await blogPostService.deleteBlogPostById(id);
     return {
         statusCode: 204,
-        body: id
+        body: id,
+        headers: defaultHeaders
     }
 }
 
-export const apiDocsHandler = async (event: APIGatewayEvent) => {
+export const apiDocsHandler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
     const ui = event?.queryStringParameters?.ui;
     const apiGateway = new APIGatewayClient();
     const restApiId = process.env.API_ID!;
@@ -94,7 +103,8 @@ export const apiDocsHandler = async (event: APIGatewayEvent) => {
     if (!ui) {
         return {
             statusCode: 200,
-            body: response
+            body: response,
+            headers: defaultHeaders
         }
     }
     const html = `

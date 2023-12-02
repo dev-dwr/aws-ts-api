@@ -5,7 +5,13 @@ import {createBlogPostHandler} from "./lambdas/blog-post-handler";
 export class RestApiAwsStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
-        const api = new aws_apigateway.RestApi(this, "blogPostApi")
+        const api = new aws_apigateway.RestApi(this, "blogPostApi", {
+            defaultCorsPreflightOptions: {
+                allowOrigins: aws_apigateway.Cors.ALL_ORIGINS,
+                allowMethods: aws_apigateway.Cors.ALL_METHODS,
+                allowHeaders: aws_apigateway.Cors.DEFAULT_HEADERS
+            }
+        })
         const table = new aws_dynamodb.Table(this, "blogPostTable", {
             tableName: "blogPostTable",
             partitionKey: {name: "id", type: aws_dynamodb.AttributeType.STRING},
